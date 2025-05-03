@@ -2,18 +2,19 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import os
-import tensorflow as tf
-from tensorflow.keras.models import load_model
-from sklearn.preprocessing import LabelEncoder
+import tensorflow as tf # type: ignore
+from tensorflow.keras.models import load_model # type: ignore
 import pickle
+from sklearn.preprocessing import LabelEncoder
+
 
 # Load model đã huấn luyện
-model = load_model('D:\VideoGestureControl\Model.h5')  # 🔥 chỉnh đúng đường dẫn file .h5 nhé!
+model = load_model('D:\VideoGestureControl\Model.h5') 
 
 # Load lại LabelEncoder nếu cần
 # Nếu không có file encoder, bạn cần khớp thứ tự class giống lúc train
 label_encoder = LabelEncoder()
-label_encoder.classes_ = np.array(['Next', 'Pause', 'Play', 'Start'])  # hoặc theo thứ tự bạn đã train
+label_encoder.classes_ = np.array(['Play', 'Pause', 'Next'])  # hoặc theo thứ tự bạn đã train
 
 # Initialize Mediapipe Hands
 mp_hands = mp.solutions.hands
@@ -94,7 +95,7 @@ def play_video(path):
             exit()
 
 # Load video list
-video_folder = '.\\Video'  # 🔥 chỉnh đúng folder chứa video của bạn
+video_folder = 'D:\VideoGestureControl\Video'  # 🔥 chỉnh đúng folder chứa video của bạn
 video_list = [os.path.join(video_folder, f) for f in os.listdir(video_folder) if f.endswith('.mp4')]
 
 # Initialize webcam

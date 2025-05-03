@@ -1,0 +1,21 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore virtual environments
+venv*/
+env*/
+*.pyd
+*.dll
+*.so
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore large trained models (if using external storage instead)
+*.h5
+*.hdf5
+*.pb
+
+# Ignore dataset backups or intermediate files
+*.csv

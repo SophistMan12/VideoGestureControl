@@ -48,7 +48,6 @@ def detect_gesture(hand_landmarks):
         return "Next"
     else:
         return "Unknown"
-
 def play_video(path):
     global gesture_state, video_index
     video = cv2.VideoCapture(path)
