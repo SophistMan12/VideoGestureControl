@@ -8,7 +8,7 @@ from keras.models import load_model  # type: ignore
 model = load_model(r'D:\VideoGestureControl\Model.h5')  # Đảm bảo path đúng
 
 # Các nhãn tương ứng với output của model
-gesture_labels = ["Start", "Pause", "Play", "Next"]
+gesture_labels = ["Start", "Pause", "Play"]
 
 # Initialize Mediapipe
 mp_hands = mp.solutions.hands
@@ -39,7 +39,7 @@ gesture_count = 0
 def predict_gesture(hand_landmarks):
     global gesture_count
     gesture_count += 1  # Tăng biến đếm mỗi lần nhận diện
-    input_vector = landmarks_to_vector(hand_landmarks).reshape(1, -1)  # (1, 420)
+    input_vector = landmarks_to_vector(hand_landmarks).reshape(1, 672)
     predictions = model.predict(input_vector, verbose=0)
     predicted_index = np.argmax(predictions)
     gesture = gesture_labels[predicted_index]
@@ -77,15 +77,11 @@ def play_video(path):
                 gesture = predict_gesture(hand_landmarks)
 
                 if gesture == "Start":
-                    gesture_state = "Play"
+                    gesture_state = "Start"
                 elif gesture == "Pause":
                     gesture_state = "Pause"
                 elif gesture == "Play":
                     gesture_state = "Play"
-                elif gesture == "Next":
-                    video_index = (video_index + 1) % len(video_list)
-                    video.release()
-                    return
 
         cv2.putText(frame_cam, f"Gesture: {gesture_state}", (10, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2)
