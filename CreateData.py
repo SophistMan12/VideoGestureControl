@@ -14,14 +14,15 @@ cap = cv2.VideoCapture(0)
 collected_data = []
 labels = []  # nhãn tương ứng
 
+# Chỉ lấy 42 cột (21 điểm x 2 tọa độ x và y)
 def extract_keypoints(hand_landmarks):
     keypoints = []
-    for lm in hand_landmarks.landmark:
+    for lm in hand_landmarks.landmark[:21]:  # Chỉ lấy 21 điểm đầu tiên
         keypoints.append(lm.x)
         keypoints.append(lm.y)
     return keypoints
 
-gesture_label = input("Nhập tên cử chỉ hiện tại (vd: Play, Pause, Next): ")
+gesture_label = input("Nhập tên cử chỉ hiện tại (Next, Pause, Play, Start): ")
 
 print("Nhấn SPACE để lưu keypoints, ESC để thoát")
 
@@ -58,12 +59,14 @@ csv_file = 'hand_gesture_dataset.csv'
 # Nếu file đã tồn tại, đọc dữ liệu cũ
 if os.path.exists(csv_file):
     existing_data = pd.read_csv(csv_file)
-    df = pd.DataFrame(collected_data)
+    df = pd.DataFrame(collected_data, columns=[f'keypoint_{i}' for i in range(1, 43)])
     df['label'] = labels
+    # Loại bỏ các mục trống hoặc toàn bộ giá trị NA trước khi nối
+    existing_data = existing_data.dropna(how='all')
     df = pd.concat([existing_data, df], ignore_index=True)  # Nối dữ liệu mới vào dữ liệu cũ
 else:
     # Nếu file chưa tồn tại, chỉ tạo DataFrame từ dữ liệu mới
-    df = pd.DataFrame(collected_data)
+    df = pd.DataFrame(collected_data, columns=[f'keypoint_{i}' for i in range(1, 43)])
     df['label'] = labels
 
 # Ghi dữ liệu vào file CSV
