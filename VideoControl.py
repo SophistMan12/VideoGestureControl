@@ -4,13 +4,25 @@ import numpy as np  # type: ignore
 import os
 import time
 from keras.models import load_model  # type: ignore
+import vlc  # Thêm thư viện VLC
+import ctypes
+
+# Add VLC installation directory to PATH to ensure libvlc.dll and dependencies are found
+vlc_installation_path = r"C:\\Program Files\\VideoLAN\\VLC"
+os.environ["PATH"] += os.pathsep + vlc_installation_path
+
+# Ensure libvlc.dll is loaded correctly
+try:
+    ctypes.CDLL(os.path.join(vlc_installation_path, "libvlc.dll"))
+except OSError as e:
+    print(f"❌ Failed to load libvlc.dll: {e}")
+    exit(1)
 
 # Load mô hình đã huấn luyện
 model = load_model(r'D:\VideoGestureControl\gesture_model_v7.h5')
 
 # Nhãn tương ứng với output của mô hình
-gesture_labels = [ 'Next', 'Pause', 'Play', 'Start']
-
+gesture_labels = ['Next', 'Pause', 'Play', 'Start']
 # Khởi tạo MediaPipe
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
@@ -46,22 +58,25 @@ def predict_gesture(hand_landmarks):
         log.write(f"{time.ctime()}: {gesture}\n")
     return gesture
 
+# Thêm biến lưu trữ gesture trước đó
+previous_gesture = None
+
 # Phát video với điều khiển bằng cử chỉ
+# Sử dụng VLC để phát video có âm thanh
 def play_video(path):
-    global gesture_state, video_index
-    video = cv2.VideoCapture(path)
+    global gesture_state, video_index, previous_gesture
+
+    # Tạo đối tượng VLC
+    player = vlc.MediaPlayer(path)
+    player.play()
 
     while True:
         if gesture_state == "Pause":
-            cv2.waitKey(100)
+            player.set_pause(1)  # Tạm dừng video và âm thanh
         else:
-            ret, frame = video.read()
-            if not ret:
-                print("🔁 Replaying video")
-                video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                continue
-            cv2.imshow("Video Player", frame)
+            player.set_pause(0)  # Tiếp tục phát video
 
+        # Xử lý camera ngay cả khi video đang tạm dừng
         ret_cam, frame_cam = cap.read()
         if not ret_cam:
             print("❌ Cannot read webcam.")
@@ -75,17 +90,21 @@ def play_video(path):
             for hand_landmarks in result.multi_hand_landmarks:
                 mp_drawing.draw_landmarks(frame_cam, hand_landmarks, mp_hands.HAND_CONNECTIONS)
                 gesture = predict_gesture(hand_landmarks)
-                if gesture == "Start":
-                    gesture_state = "Play"
-                elif gesture == "Play":
-                    gesture_state = "Play"
-                elif gesture == "Pause":
-                    gesture_state = "Pause"
-                elif gesture == "Next":
-                    video_index = (video_index + 1) % len(video_list)
-                    video.release()
-                    return  # chuyển video mới
 
+                # Chỉ xử lý khi gesture khác với gesture trước đó
+                if gesture != previous_gesture:
+                    previous_gesture = gesture
+                    if gesture == "Start":
+                        gesture_state = "Play"
+                    elif gesture == "Play":
+                        gesture_state = "Play"
+                    elif gesture == "Pause":
+                        gesture_state = "Pause"
+                    elif gesture == "Next":
+                        video_index = (video_index + 1) % len(video_list)
+                        player.stop()
+                        return  # chuyển video mới
+                        
         cv2.putText(frame_cam, f"Gesture: {gesture_state}", (10, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2)
         cv2.imshow("Gesture Camera", frame_cam)
@@ -93,12 +112,12 @@ def play_video(path):
         key = cv2.waitKey(10) & 0xFF
         if key == 27:  # ESC
             cap.release()
-            video.release()
+            player.stop()
             cv2.destroyAllWindows()
             exit()
         elif key == ord('n'):
             video_index = (video_index + 1) % len(video_list)
-            video.release()
+            player.stop()
             return  # chuyển video mới
 
 # Tải danh sách video
@@ -107,10 +126,26 @@ video_list = [os.path.join(video_folder, f) for f in os.listdir(video_folder) if
 
 # Khởi tạo webcam
 cap = cv2.VideoCapture(0)
+
+# Thử mở camera với các ID khác nhau nếu ID 0 không hoạt động
+camera_id = 0
+while not cap.isOpened() and camera_id < 5:
+    print(f"⚠️ Camera ID {camera_id} không hoạt động. Thử ID tiếp theo...")
+    camera_id += 1
+    cap = cv2.VideoCapture(camera_id)
+
+if not cap.isOpened():
+    print("❌ Không thể mở bất kỳ camera nào. Vui lòng kiểm tra kết nối hoặc quyền truy cập.")
+    exit(1)
+
+print(f"✅ Camera đã được mở thành công với ID {camera_id}.")
+
+# Xóa logic kiểm tra khung hình từ camera
+
 gesture_state = "Pause"
 video_index = 0
 
 # Vòng lặp chính
 while True:
-    print(f"▶ Playing video: {video_list[video_index]}")
+    print(f"▶ Playing video: {video_list[video_index]}\n")
     play_video(video_list[video_index])
