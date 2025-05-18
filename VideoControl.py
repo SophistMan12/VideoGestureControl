@@ -4,7 +4,7 @@ import numpy as np  # type: ignore
 import os
 import time
 from keras.models import load_model  # type: ignore
-import vlc  # Thêm thư viện VLC
+import vlc  # type: ignore 
 import ctypes
 
 # Add VLC installation directory to PATH to ensure libvlc.dll and dependencies are found
@@ -19,7 +19,7 @@ except OSError as e:
     exit(1)
 
 # Load mô hình đã huấn luyện
-model = load_model(r'D:\VideoGestureControl\gesture_model_v7.h5')
+model = load_model(r'D:\VideoGestureControl\gesture_model_v8.h5')
 
 # Nhãn tương ứng với output của mô hình
 gesture_labels = ['Next', 'Pause', 'Play', 'Start']
@@ -69,7 +69,8 @@ def play_video(path):
     # Tạo đối tượng VLC
     player = vlc.MediaPlayer(path)
     player.play()
-
+    player.video_set_scale(1.5)  # Tăng kích thước video lên lần
+    
     while True:
         if gesture_state == "Pause":
             player.set_pause(1)  # Tạm dừng video và âm thanh
@@ -105,9 +106,17 @@ def play_video(path):
                         player.stop()
                         return  # chuyển video mới
                         
+        # Giảm kích thước khung hình camera trước khi hiển thị
+        frame_cam = cv2.resize(frame_cam, (320, 240))
         cv2.putText(frame_cam, f"Gesture: {gesture_state}", (10, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2)
         cv2.imshow("Gesture Camera", frame_cam)
+        # Đưa cửa sổ webcam xuống góc phải dưới màn hình
+        user32 = ctypes.windll.user32
+        screen_width = user32.GetSystemMetrics(0)
+        screen_height = user32.GetSystemMetrics(1)
+        cam_width, cam_height = 480, 360
+        cv2.moveWindow("Gesture Camera", screen_width - cam_width, screen_height - cam_height)
 
         key = cv2.waitKey(10) & 0xFF
         if key == 27:  # ESC
