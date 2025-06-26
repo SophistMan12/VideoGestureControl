@@ -4,8 +4,8 @@ import numpy as np  # type: ignore
 import os
 import time
 from keras.models import load_model  # type: ignore
-import vlc  # type: ignore 
 import ctypes
+import vlc   # type: ignore
 
 # Add VLC installation directory to PATH to ensure libvlc.dll and dependencies are found
 vlc_installation_path = r"C:\\Program Files\\VideoLAN\\VLC"
